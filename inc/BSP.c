@@ -1049,12 +1049,10 @@ uint8_t static writedata(uint8_t c) {
 
 #else
   //Keil uVision Code
-  __asm void
-  parrotdelay(uint32_t ulCount)
-  {
-    subs    r0, #1
-    bne     parrotdelay
-    bx      lr
+  void parrotdelay(uint32_t ulCount){
+  __asm ("  subs    r0, #1\n"
+    "bne     parrotdelay\n"
+    "bx      lr\n");
   }
 
 #endif
@@ -2285,12 +2283,17 @@ uint32_t BSP_Time_Get(void){
 // milliseconds.
 // Inputs: n  number of 1 msec to wait
 // Outputs: none
+#pragma GCC push_options
+#pragma GCC optimize ("O3")
 void BSP_Delay1ms(uint32_t n){
-  while(n){
-    parrotdelay(23746);    // 1 msec, tuned at 80 MHz, originally part of LCD module
-    n--;
-  }
+//  while(n){
+//    parrotdelay(23746);    // 1 msec, tuned at 80 MHz, originally part of LCD module
+//    n--;
+//  }
+	for(volatile int i=1000*n; i >0; i--) ;
 }
+#pragma GCC pop_options
+
 
 // There are two I2C devices on the Educational BoosterPack MKII:
 // OPT3001 Light Sensor
@@ -2559,6 +2562,9 @@ int32_t static lightsensorend(uint8_t slaveAddress){
 // Assumes: BSP_LightSensor_Init() has been called
 #define LIGHTINT  (*((volatile uint32_t *)0x40004080))  /* PA5 */
 int LightBusy = 0;                 // 0 = idle; 1 = measuring
+
+#if 0
+
 uint32_t BSP_LightSensor_Input(void){
   uint32_t light;
   LightBusy = 1;
@@ -2568,6 +2574,15 @@ uint32_t BSP_LightSensor_Input(void){
   LightBusy = 0;
   return light;
 }
+#else
+const uint32_t Dummy[4]= { 1000,2000,3000,4000};
+uint32_t DummyTime=0;
+uint32_t BSP_LightSensor_Input(void){
+  DummyTime =DummyTime+1;
+  if(DummyTime == 4) DummyTime = 0;
+  return Dummy[DummyTime];
+}
+#endif
 
 // ------------BSP_LightSensor_Start------------
 // Start a measurement using the OPT3001.
@@ -2676,6 +2691,8 @@ void static tempsensorend(uint8_t slaveAddress, int32_t *sensorV, int32_t *local
 // Assumes: BSP_TempSensor_Init() has been called
 #define TEMPINT   (*((volatile uint32_t *)0x40004010))  /* PA2 */
 int TempBusy = 0;                  // 0 = idle; 1 = measuring
+
+#if 0
 void BSP_TempSensor_Input(int32_t *sensorV, int32_t *localT){
   int32_t volt, temp;
   TempBusy = 1;
@@ -2686,6 +2703,16 @@ void BSP_TempSensor_Input(int32_t *sensorV, int32_t *localT){
   *localT = temp;
   TempBusy = 0;
 }
+#else
+const uint32_t Dummy2[4]= { 1000,2000,3000,4000};
+uint32_t DummyTime2=0;
+void BSP_TempSensor_Input(int32_t *sensorV, int32_t *localT){
+ DummyTime2 =DummyTime2+1;
+  if(DummyTime2 == 4) DummyTime2 = 0;
+  *localT = Dummy2[DummyTime2];
+  *sensorV= Dummy2[DummyTime2];
+}
+#endif
 
 // ------------BSP_TempSensor_Start------------
 // Start a measurement using the TMP006.
