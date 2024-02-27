@@ -2290,7 +2290,7 @@ void BSP_Delay1ms(uint32_t n){
 //    parrotdelay(23746);    // 1 msec, tuned at 80 MHz, originally part of LCD module
 //    n--;
 //  }
-	for(volatile int i=1000*n; i >0; i--) ;
+	for(volatile int i=23746*n; i >0; i--) ;
 }
 #pragma GCC pop_options
 
