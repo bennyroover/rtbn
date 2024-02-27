@@ -468,7 +468,7 @@ int main(void){
   Profile_Init();               // initialize the 7 hardware profiling pins
   // change 1000 to 4-digit number from edX 
   TExaS_Init(GRADER, 1000 );         // initialize the Lab 1 grader
-//  TExaS_Init(LOGICANALYZER, 1000);  // initialize the Lab 1 logic analyzer
+  //TExaS_Init(LOGICANALYZER, 1000);  // initialize the Lab 1 logic analyzer
   Task0_Init();    // microphone init
   Task1_Init();    // accelerometer init
   Task2_Init();    // light init
