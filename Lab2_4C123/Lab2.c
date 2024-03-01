@@ -136,7 +136,8 @@ void Task1_Init(void){
 // sends data to Task2
 // Inputs:  none
 // Outputs: none
-void Task1(void){uint32_t squared;
+void Task1(void){
+  uint32_t squared;
   TExaS_Task1();     // records system time in array, toggles virtual logic analyzer
   Profile_Toggle1(); // viewed by a real logic analyzer to know Task1 started
 
@@ -185,7 +186,8 @@ void drawaxes(void){
   }
   OS_Signal(&LCDmutex);  ReDrawAxes = 0;
 }
-void Task2(void){uint32_t data;
+void Task2(void){
+  uint32_t data;
   uint32_t localMin;   // smallest measured magnitude since odd-numbered step detected
   uint32_t localMax;   // largest measured magnitude since even-numbered step detected
   uint32_t localCount; // number of measured magnitudes above local min or below local max
@@ -337,7 +339,8 @@ void Task3(void){
 // measures temperature
 // Inputs:  none
 // Outputs: none
-void Task4(void){int32_t voltData,tempData;
+void Task4(void){
+  int32_t voltData,tempData;
   int done;
   BSP_TempSensor_Init();
   while(1){
@@ -366,7 +369,8 @@ void Task4(void){int32_t voltData,tempData;
 // updates the text at the top of the LCD
 // Inputs:  none
 // Outputs: none
-void Task5(void){int32_t soundSum;
+void Task5(void){
+  int32_t soundSum;
   uint32_t soundRMS;        // Root Mean Square average of most recent sound samples
   OS_Wait(&LCDmutex);
   BSP_LCD_DrawString(0, 0,  "Time=",  TOPTXTCOLOR);
@@ -419,7 +423,7 @@ int main_full(void){
 //******************Step 1**************************
 // implement and test the semaphores
 int32_t s1,s2;
-int main(void){
+int main_step1(void){
   OS_InitSemaphore(&s1,0);
   OS_InitSemaphore(&s2,1);
   while(1){
@@ -435,7 +439,8 @@ int main(void){
 // Implement the three mailbox functions as defined in OS.c and OS.h
 // Use this a simple main program to test the mailbox functions.
 uint32_t Out;
-int main_step2(void){ uint32_t in=0;
+int main(void){
+  uint32_t in=0;
   OS_MailBox_Init();
   while(1){
     OS_MailBox_Send(in);

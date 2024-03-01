@@ -155,10 +155,13 @@ void OS_Signal(int32_t *semaPt){
 // Producer is an event thread, consumer is a main thread
 // Inputs:  none
 // Outputs: none
+uint32_t mail; // data mailbox
+uint32_t lost; // lost data counter
+int32_t send; // send semaphore (no ack bc producer is event thread)
 void OS_MailBox_Init(void){
   // include data field and semaphore
   //***YOU IMPLEMENT THIS FUNCTION*****
-
+  send = 0; lost = 0;
 }
 
 // ******** OS_MailBox_Send ************
@@ -169,7 +172,12 @@ void OS_MailBox_Init(void){
 // Errors: data lost if MailBox already has data
 void OS_MailBox_Send(uint32_t data){
   //***YOU IMPLEMENT THIS FUNCTION*****
-
+  mail = data;
+  if (send) {
+    lost++;
+  } else {
+    OS_Signal(&send);
+  }
 }
 
 // ******** OS_MailBox_Recv ************
@@ -180,8 +188,11 @@ void OS_MailBox_Send(uint32_t data){
 // Inputs:  none
 // Outputs: data retreived
 // Errors:  none
-uint32_t OS_MailBox_Recv(void){ uint32_t data;
+uint32_t OS_MailBox_Recv(void){
+  uint32_t data;
   //***YOU IMPLEMENT THIS FUNCTION*****
+  OS_Wait(&send);
+  data = mail;
   return data;
 }
 
