@@ -395,7 +395,7 @@ void Task5(void){int32_t soundSum;
 /*          End of Task5 Section              */
 /* ****************************************** */
 
-int main(void){
+int main_full(void){
   OS_Init();
   Profile_Init();  // initialize the 7 hardware profiling pins
   Task0_Init();    // microphone init
@@ -419,7 +419,7 @@ int main(void){
 //******************Step 1**************************
 // implement and test the semaphores
 int32_t s1,s2;
-int main_step1(void){
+int main(void){
   OS_InitSemaphore(&s1,0);
   OS_InitSemaphore(&s2,1);
   while(1){
@@ -496,7 +496,7 @@ int main_step4(void){
 
 //***************Step 5*************************
 // add one periodic task
-void Dummy(void){}; // place holder
+void Dummy25(void){}; // place holder
 int main_step5(void){
   OS_Init();
   Profile_Init();  // initialize the 7 hardware profiling pins
@@ -512,7 +512,7 @@ int main_step5(void){
 // Task1 will not run
 // Task5 will stall
   // Task 0 should run every 1ms and dummy is not run
-  OS_AddPeriodicEventThreads(&Task0, 1, &Dummy, 100);
+  OS_AddPeriodicEventThreads(&Task0, 1, &Dummy25, 100);
   // Task2, Task3, Task4, Task5 are main threads
   OS_AddThreads(&Task2, &Task3, &Task4, &Task5);
   // when grading change 1000 to 4-digit number from edX
