@@ -2745,7 +2745,14 @@ int BSP_TempSensor_End(int32_t *sensorV, int32_t *localT){
   } else{
     // measurement is in progress
     if(TEMPINT == 0x04){
-      return 0;                    // measurement needs more time to complete
+      // no temp sensor code
+      if(DummyTime2 == 4) DummyTime2 = 0;
+      *localT = Dummy2[DummyTime2];
+      *sensorV= Dummy2[DummyTime2];
+      DummyTime2 =DummyTime2+1;
+      TempBusy = 0;
+      return 1;
+      // return 0;                    // measurement needs more time to complete
     } else{
       tempsensorend(0x40, &volt, &temp);
       *sensorV = volt;

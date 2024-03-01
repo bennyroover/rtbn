@@ -34,7 +34,24 @@ void OS_Init(void){
 
 void SetInitialStack(int i){
   //***YOU IMPLEMENT THIS FUNCTION*****
-
+  tcbs[i].sp = &Stacks[i][STACKSIZE - 16];
+  Stacks[i][STACKSIZE-1] = 0x01000000;  // R16 PSR, set thumb bit 
+  // R15 (PC) set in OS_AddThreads()
+  Stacks[i][STACKSIZE-3] = 0x14141414;  // R14 (LR)
+  // R13 Stack pointer is not stored on the stack, instead to TCB above
+  Stacks[i][STACKSIZE-4] = 0x12121212;  // R12
+  Stacks[i][STACKSIZE-5] = 0x03030303;  // R3
+  Stacks[i][STACKSIZE-6] = 0x02020202;  // R2
+  Stacks[i][STACKSIZE-7] = 0x01010101;  // R1
+  Stacks[i][STACKSIZE-8] = 0x00000000;  // R0
+  Stacks[i][STACKSIZE-9] = 0x11111111;  // R11
+  Stacks[i][STACKSIZE-10] = 0x10101010; // R10
+  Stacks[i][STACKSIZE-11] = 0x09090909; // R9
+  Stacks[i][STACKSIZE-12] = 0x08080808; // R8
+  Stacks[i][STACKSIZE-13] = 0x07070707; // R7
+  Stacks[i][STACKSIZE-14] = 0x06060606; // R6
+  Stacks[i][STACKSIZE-15] = 0x05050505; // R5
+  Stacks[i][STACKSIZE-16] = 0x04040404; // R4  
 }
 
 //******** OS_AddThreads ***************
@@ -66,6 +83,17 @@ int OS_AddThreads3(void(*task0)(void),
 // initialize RunPt
 // initialize four stacks, including initial PC
   //***YOU IMPLEMENT THIS FUNCTION*****
+  long status;
+  status = StartCritical(); 
+  tcbs[0].next = &tcbs[1]; // 0 points to 1 
+  tcbs[1].next = &tcbs[2]; // 1 points to 2 
+  tcbs[2].next = &tcbs[0]; // 2 points to 0 
+
+  SetInitialStack(0); Stacks[0][STACKSIZE-2] = (int32_t)(task0); // PC
+  SetInitialStack(1); Stacks[1][STACKSIZE-2] = (int32_t)(task1); // PC
+  SetInitialStack(2); Stacks[2][STACKSIZE-2] = (int32_t)(task2); // PC
+  RunPt = &tcbs[0];        // thread 0 will run first 
+  EndCritical(status); 
 
   return 1;               // successful
 }
