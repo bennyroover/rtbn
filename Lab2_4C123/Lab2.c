@@ -351,7 +351,7 @@ void Task4(void){
     while(done == 0){
       done = BSP_TempSensor_End(&voltData,&tempData); // waits about 1 sec
     }
-    TemperatureData = tempData/10000;
+    TemperatureData = tempData/100;
   }
 }
 /* ****************************************** */
@@ -470,8 +470,8 @@ int main(void){
 // Task5 will stall
   OS_AddThreads3(&Task3, &Task4, &Task5);
   // when grading change 1000 to 4-digit number from edX
-  //TExaS_Init(GRADER, 1000);          // initialize the Lab 2 grader
-  TExaS_Init(LOGICANALYZER, 1000); // initialize the Lab 2 logic analyzer
+  TExaS_Init(GRADER, 1000);          // initialize the Lab 2 grader
+  //TExaS_Init(LOGICANALYZER, 1000); // initialize the Lab 2 logic analyzer
   OS_Launch(BSP_Clock_GetFreq()/THREADFREQ); // doesn't return, interrupts enabled in here
   return 0;             // this never executes
 }
