@@ -399,7 +399,7 @@ void Task5(void){
 /*          End of Task5 Section              */
 /* ****************************************** */
 
-int main_full(void){
+int main(void){
   OS_Init();
   Profile_Init();  // initialize the 7 hardware profiling pins
   Task0_Init();    // microphone init
@@ -477,7 +477,7 @@ int main_step3(void){
 }
 //***************Step 4*************************
 // Increase to 4 threads
-int main(void){
+int main_step4(void){
   OS_Init();
   Profile_Init();  // initialize the 7 hardware profiling pins
   Task0_Init();    // microphone init
@@ -517,7 +517,8 @@ int main_step5(void){
 // Task1 will not run
 // Task5 will stall
   // Task 0 should run every 1ms and dummy is not run
-  OS_AddPeriodicEventThreads(&Task0, 1, &Dummy25, 100);
+  //OS_AddPeriodicEventThreads(&Task0, 1, &Dummy25, 100);
+  OS_AddPeriodicEventThreads(&Dummy25, 1, &Task1, 100);
   // Task2, Task3, Task4, Task5 are main threads
   OS_AddThreads(&Task2, &Task3, &Task4, &Task5);
   // when grading change 1000 to 4-digit number from edX

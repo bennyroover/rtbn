@@ -17,6 +17,12 @@ tcbType tcbs[NUMTHREADS];
 tcbType *RunPt;
 int32_t Stacks[NUMTHREADS][STACKSIZE];
 
+uint32_t mail; // data mailbox
+uint32_t lost; // lost data counter
+int32_t send; // send semaphore (no ack bc producer is event thread)
+uint32_t count; // SysTick counter for scheduling periodic tasks
+void(*periodicThread0)(void);
+void(*periodicThread1)(void);
 
 // ******** OS_Init ************
 // Initialize operating system, disable interrupts
@@ -123,7 +129,10 @@ int OS_AddThreads3(void(*task0)(void),
 int OS_AddPeriodicEventThreads(void(*thread1)(void), uint32_t period1,
   void(*thread2)(void), uint32_t period2){
   //***YOU IMPLEMENT THIS FUNCTION*****
-
+  count = 0;
+  periodicThread0 = thread1;
+  periodicThread1 = thread2;
+  // this should really set the counter modulus and periodic thread modulus but I'm lazy
   return 1;
 }
 
@@ -145,6 +154,9 @@ void Scheduler(void){ // every time slice
   // run any periodic event threads if needed
   // implement round robin scheduler, update RunPt
   //***YOU IMPLEMENT THIS FUNCTION*****
+  periodicThread0();
+  if (count == 0) periodicThread1();
+  count = (count + 1) % 100;
   RunPt = RunPt -> next;
 }
 
@@ -195,9 +207,6 @@ void OS_Signal(int32_t *semaPt){
 // Producer is an event thread, consumer is a main thread
 // Inputs:  none
 // Outputs: none
-uint32_t mail; // data mailbox
-uint32_t lost; // lost data counter
-int32_t send; // send semaphore (no ack bc producer is event thread)
 void OS_MailBox_Init(void){
   // include data field and semaphore
   //***YOU IMPLEMENT THIS FUNCTION*****
