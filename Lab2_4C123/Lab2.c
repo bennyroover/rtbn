@@ -456,7 +456,7 @@ int main_step2(void){
 //  OS_Init
 //  OS_AddThreads3 (with just 3 threads for now)
 //  OS_Launch
-int main(void){
+int main_step3(void){
   OS_Init();
   Profile_Init();  // initialize the 7 hardware profiling pins
   Task0_Init();    // microphone init
@@ -477,7 +477,7 @@ int main(void){
 }
 //***************Step 4*************************
 // Increase to 4 threads
-int main_step4(void){
+int main(void){
   OS_Init();
   Profile_Init();  // initialize the 7 hardware profiling pins
   Task0_Init();    // microphone init

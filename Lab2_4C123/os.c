@@ -67,7 +67,19 @@ int OS_AddThreads(void(*thread0)(void),
 // initialize RunPt
 // initialize four stacks, including initial PC
   //***YOU IMPLEMENT THIS FUNCTION*****
+  long status;
+  status = StartCritical(); 
+  tcbs[0].next = &tcbs[1]; // 0 points to 1 
+  tcbs[1].next = &tcbs[2]; // 1 points to 2 
+  tcbs[2].next = &tcbs[3]; // 2 points to 0 
+  tcbs[3].next = &tcbs[0]; // 2 points to 0                   
 
+  SetInitialStack(0); Stacks[0][STACKSIZE-2] = (int32_t)(thread0); // PC
+  SetInitialStack(1); Stacks[1][STACKSIZE-2] = (int32_t)(thread1); // PC
+  SetInitialStack(2); Stacks[2][STACKSIZE-2] = (int32_t)(thread2); // PC
+  SetInitialStack(3); Stacks[3][STACKSIZE-2] = (int32_t)(thread3); // PC
+  RunPt = &tcbs[0];        // thread 0 will run first 
+  EndCritical(status); 
   return 1;               // successful
 }
 
@@ -133,7 +145,7 @@ void Scheduler(void){ // every time slice
   // run any periodic event threads if needed
   // implement round robin scheduler, update RunPt
   //***YOU IMPLEMENT THIS FUNCTION*****
-
+  RunPt = RunPt -> next;
 }
 
 // ******** OS_InitSemaphore ************
