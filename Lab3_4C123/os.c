@@ -12,14 +12,15 @@
 // function definitions in osasm.s
 void StartOS(void);
 
+#define NULL 0
 #define NUMTHREADS  6        // maximum number of threads
 #define NUMPERIODIC 2        // maximum number of periodic threads
 #define STACKSIZE   100      // number of 32-bit words in stack per thread
 struct tcb{
   int32_t *sp;       // pointer to stack (valid for threads not running
   struct tcb *next;  // linked-list pointer
-   // nonzero if blocked on this semaphore
-   // nonzero if this thread is sleeping
+  int32_t *blocked; // nonzero if blocked on this semaphore
+  uint32_t sleep; // nonzero if this thread is sleeping
 //*FILL THIS IN****
 };
 typedef struct tcb tcbType;
@@ -89,6 +90,12 @@ int OS_AddThreads(void(*thread0)(void),
   SetInitialStack(3); Stacks[3][STACKSIZE-2] = (int32_t)(thread3); 
   SetInitialStack(4); Stacks[4][STACKSIZE-2] = (int32_t)(thread4); 
   SetInitialStack(5); Stacks[5][STACKSIZE-2] = (int32_t)(thread5); 
+                    
+  for (int i = 0; i < NUMTHREADS; i++) {
+    tcbs[i].blocked = NULL;
+    tcbs[i].sleep = 0;
+  }
+  
   RunPt = &tcbs[0];        // thread 0 will run first 
   EndCritical(status); 
   return 1;               // successful
@@ -163,6 +170,7 @@ void OS_Sleep(uint32_t sleepTime){
 // Outputs: none
 void OS_InitSemaphore(int32_t *semaPt, int32_t value){
 //***IMPLEMENT THIS***
+  *semaPt = value;
 }
 
 // ******** OS_Wait ************
@@ -173,6 +181,14 @@ void OS_InitSemaphore(int32_t *semaPt, int32_t value){
 // Outputs: none
 void OS_Wait(int32_t *semaPt){
 //***IMPLEMENT THIS***
+  DisableInterrupts();
+  (*semaPt)--;
+  if (*semaPt < 0) { // we are blocked
+    RunPt->blocked = semaPt;
+    EnableInterrupts();
+    OS_Suspend();
+  }
+  EnableInterrupts();
 }
 
 // ******** OS_Signal ************
@@ -183,6 +199,17 @@ void OS_Wait(int32_t *semaPt){
 // Outputs: none
 void OS_Signal(int32_t *semaPt){
 //***IMPLEMENT THIS***
+  tcbType *tpt;
+  DisableInterrupts();
+  (*semaPt)++;
+  if (*semaPt <= 0) { // someone got unblocked
+    tpt = RunPt->next; // we cannot be blocked
+    while (tpt->blocked != semaPt) {
+      tpt = tpt->next;
+    }  
+    tpt->blocked = NULL;
+  }
+  EnableInterrupts();
 }
 
 #define FSIZE 10    // can be any size
