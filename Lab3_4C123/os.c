@@ -113,19 +113,44 @@ int OS_AddThreads(void(*thread0)(void),
 // These threads cannot spin, block, loop, sleep, or kill
 // These threads can call OS_Signal
 // In Lab 3 this will be called exactly twice
+
+void(*periodic1)(void) = NULL;
+void(*periodic2)(void) = NULL;
+uint32_t mod1;
+uint32_t mod2;
 int OS_AddPeriodicEventThread(void(*thread)(void), uint32_t period){
 // ****IMPLEMENT THIS****
+  if (periodic1 == NULL) {
+    periodic1 = thread;
+    mod1 = period;
+  } else if (periodic2 == NULL) {
+    periodic2 = thread;
+    mod2 = period;    
+  } else {
+    return 0;
+  }
   return 1;
-
 }
 
+uint32_t count = 0;
 void static runperiodicevents(void){
 // ****IMPLEMENT THIS****
 // **RUN PERIODIC THREADS, DECREMENT SLEEP COUNTERS
+  if (count % mod1 == 0)
+    if (periodic1 != NULL)
+      periodic1();
+  
+  if (count % mod2 == 0)
+    if (periodic2 != NULL)
+      periodic2();
+  
+  count = (mod1>=mod2 ? (count+1)%mod1 : (count+1)%mod2);
+  
   for (int i = 0; i < NUMTHREADS; i++) {
     if (tcbs[i].sleep != 0)
       (tcbs[i].sleep)--;
   }
+  
 }
 
 //******** OS_Launch ***************
