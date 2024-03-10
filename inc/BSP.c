@@ -2613,8 +2613,14 @@ int BSP_LightSensor_End(uint32_t *light){
   } else{
     // measurement is in progress
     if(LIGHTINT == 0x20){
-      return 0;                    // measurement needs more time to complete
-    } else{
+      // no light sensor code - this always runs
+      if(DummyTime == 4) DummyTime = 0;
+      *light= Dummy[DummyTime];
+      DummyTime =DummyTime+1;
+      LightBusy = 0;
+      return 1;
+      // return 0;
+    } else{ // no light sensor - this never runs
       lightLocal = lightsensorend(0x44);
       *light = lightLocal;
       LightBusy = 0;
@@ -2745,7 +2751,7 @@ int BSP_TempSensor_End(int32_t *sensorV, int32_t *localT){
   } else{
     // measurement is in progress
     if(TEMPINT == 0x04){
-      // no temp sensor code
+      // no temp sensor code - this always run
       if(DummyTime2 == 4) DummyTime2 = 0;
       *localT = Dummy2[DummyTime2];
       *sensorV= Dummy2[DummyTime2];
@@ -2753,7 +2759,7 @@ int BSP_TempSensor_End(int32_t *sensorV, int32_t *localT){
       TempBusy = 0;
       return 1;
       // return 0;                    // measurement needs more time to complete
-    } else{
+    } else{ // no temp sensor - this never runs
       tempsensorend(0x40, &volt, &temp);
       *sensorV = volt;
       *localT = temp;

@@ -363,7 +363,7 @@ void Task4(void){int32_t voltData,tempData;
       done = BSP_TempSensor_End(&voltData, &tempData);
       OS_Signal(&I2Cmutex);
     }
-    TemperatureData = tempData/10000;
+    TemperatureData = tempData/100;
   }
 }
 /* ****************************************** */
@@ -871,7 +871,7 @@ void TaskZ(void){ // dummy
   }
 }
 
-int main(void){
+int main_step5(void){
   OS_Init();
   Profile_Init();  // initialize the 7 hardware profiling pins
   OS_FIFO_Init();
@@ -1211,7 +1211,7 @@ const unsigned short title2[] = {
 // Remember that you must have exactly one main() function, so
 // to work on this step, you must rename all other main()
 // functions in this file.
-int main_full(void){
+int main(void){
   OS_Init();
   Profile_Init();  // initialize the 7 hardware profiling pins
   Task0_Init();    // microphone init
