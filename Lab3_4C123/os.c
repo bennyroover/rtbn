@@ -230,6 +230,10 @@ uint32_t LostData;  // number of lost pieces of data
 // Outputs: none
 void OS_FIFO_Init(void){
 //***IMPLEMENT THIS***
+  LostData = 0;
+  PutI = 0;
+  GetI = 0;
+  OS_InitSemaphore(&CurrentSize, 0);
 }
 
 // ******** OS_FIFO_Put ************
@@ -240,9 +244,15 @@ void OS_FIFO_Init(void){
 // Outputs: 0 if successful, -1 if the FIFO is full
 int OS_FIFO_Put(uint32_t data){
 //***IMPLEMENT THIS***
-
+  if (CurrentSize == FSIZE) { // FIFO full
+    LostData++;
+    return -1; // full
+  }
+  
+  Fifo[PutI] = data; // store data at Put index
+  PutI = (PutI + 1) % FSIZE; // increment and wrap Put index
+  OS_Signal(&CurrentSize);
   return 0;   // success
-
 }
 
 // ******** OS_FIFO_Get ************
@@ -253,7 +263,9 @@ int OS_FIFO_Put(uint32_t data){
 // Outputs: data retrieved
 uint32_t OS_FIFO_Get(void){uint32_t data;
 //***IMPLEMENT THIS***
-
+  OS_Wait(&CurrentSize); // block if empty
+  data = Fifo[GetI]; // get data from Get index
+  GetI = (GetI + 1) % FSIZE; // increment and wrap Get index
   return data;
 }
 
