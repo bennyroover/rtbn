@@ -27,14 +27,7 @@ typedef struct tcb tcbType;
 tcbType tcbs[NUMTHREADS];
 tcbType *RunPt;
 int32_t Stacks[NUMTHREADS][STACKSIZE];
-
-// sleep ISR
-static void SleepISR(void) {
-  for (int i = 0; i < NUMTHREADS; i++) {
-    if (tcbs[i].sleep != 0)
-      (tcbs[i].sleep)--;
-  }
-}
+void static runperiodicevents(void);
 
 // ******** OS_Init ************
 // Initialize operating system, disable interrupts
@@ -46,7 +39,7 @@ void OS_Init(void){
   DisableInterrupts();
   BSP_Clock_InitFastest();// set processor clock to fastest speed
   // perform any initializations needed
-  BSP_PeriodicTask_Init(&SleepISR, 1000, 0);
+  BSP_PeriodicTask_Init(&runperiodicevents, 1000, 0);
 }
 
 void SetInitialStack(int i){
@@ -129,7 +122,10 @@ int OS_AddPeriodicEventThread(void(*thread)(void), uint32_t period){
 void static runperiodicevents(void){
 // ****IMPLEMENT THIS****
 // **RUN PERIODIC THREADS, DECREMENT SLEEP COUNTERS
-
+  for (int i = 0; i < NUMTHREADS; i++) {
+    if (tcbs[i].sleep != 0)
+      (tcbs[i].sleep)--;
+  }
 }
 
 //******** OS_Launch ***************
