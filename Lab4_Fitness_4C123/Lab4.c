@@ -342,7 +342,7 @@ void Task4(void){int32_t voltData,tempData;
       done = BSP_TempSensor_End(&voltData, &tempData);
       OS_Signal(&I2Cmutex);
     }
-    TemperatureData = tempData/10000;
+    TemperatureData = tempData/100;
   }
 }
 /* ****************************************** */
