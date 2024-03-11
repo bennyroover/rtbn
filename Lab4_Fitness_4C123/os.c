@@ -22,6 +22,7 @@ struct tcb{
   struct tcb *next;  // linked-list pointer
   int32_t *blocked; // nonzero if blocked on this semaphore
   uint32_t sleep; // nonzero if this thread is sleeping
+  uint32_t priority; // 0 is highest
 //*FILL THIS IN****
 };
 
@@ -43,7 +44,7 @@ void OS_Init(void){
   BSP_Clock_InitFastest();// set processor clock to fastest speed
 // perform any initializations needed, 
 // set up periodic timer to run runperiodicevents to implement sleeping
-  
+  BSP_PeriodicTask_Init(&runperiodicevents, 1000, 0);
 }
 
 void SetInitialStack(int i){
@@ -91,7 +92,9 @@ int OS_AddThreads(void(*thread0)(void), uint32_t p0,
   tcbs[2].next = &tcbs[3]; // 2 points to 3
   tcbs[3].next = &tcbs[4]; // 3 points to 4
   tcbs[4].next = &tcbs[5]; // 4 points to 5
-  tcbs[5].next = &tcbs[0]; // 5 points to 0                   
+  tcbs[5].next = &tcbs[6]; // 5 points to 6
+  tcbs[6].next = &tcbs[7]; // 6 points to 7
+  tcbs[7].next = &tcbs[0]; // 7 points to 0                   
 
   SetInitialStack(0); Stacks[0][STACKSIZE-2] = (int32_t)(thread0); // PC
   SetInitialStack(1); Stacks[1][STACKSIZE-2] = (int32_t)(thread1);
@@ -99,6 +102,17 @@ int OS_AddThreads(void(*thread0)(void), uint32_t p0,
   SetInitialStack(3); Stacks[3][STACKSIZE-2] = (int32_t)(thread3); 
   SetInitialStack(4); Stacks[4][STACKSIZE-2] = (int32_t)(thread4); 
   SetInitialStack(5); Stacks[5][STACKSIZE-2] = (int32_t)(thread5); 
+  SetInitialStack(6); Stacks[6][STACKSIZE-2] = (int32_t)(thread6); 
+  SetInitialStack(7); Stacks[7][STACKSIZE-2] = (int32_t)(thread7); 
+                    
+  tcbs[0].priority = p0;
+  tcbs[1].priority = p1;
+  tcbs[2].priority = p2;
+  tcbs[3].priority = p3;
+  tcbs[4].priority = p4;
+  tcbs[5].priority = p5;
+  tcbs[6].priority = p6;
+  tcbs[7].priority = p7;
                     
   for (int i = 0; i < NUMTHREADS; i++) {
     tcbs[i].blocked = NULL;
@@ -140,7 +154,19 @@ void Scheduler(void){      // every time slice
 // look at all threads in TCB list choose
 // highest priority thread not blocked and not sleeping 
 // If there are multiple highest priority (not blocked, not sleeping) run these round robin
-
+  uint32_t max = UINT32_MAX;
+  tcbType *tpt = RunPt;
+  tcbType *bestTpt;
+  
+  do {
+    tpt = tpt->next;
+    if (tpt->sleep == 0 && tpt->blocked == NULL && tpt->priority < max) {
+      bestTpt = tpt;
+      max = bestTpt->priority;
+    }
+  } while (tpt != RunPt); // search the whole list for highest priority task
+  
+  RunPt = bestTpt;
 }
 
 //******** OS_Suspend ***************

@@ -459,7 +459,7 @@ void Task7(void){
 // Remember that you must have exactly one main() function, so
 // to work on this step, you must rename all other main()
 // functions in this file.
-int main(void){
+int main_full(void){
   OS_Init();
   Profile_Init();  // initialize the 7 hardware profiling pins
   BSP_Button1_Init();
@@ -587,6 +587,7 @@ void TaskG(void){ // dummy
   CountG = 0; // this should run a lot
   while(1){
     CountG++;
+    TExaS_Task6();
   }
 }
 void TaskH(void){ // dummy
@@ -595,7 +596,7 @@ void TaskH(void){ // dummy
     CountH++;
   }
 }
-int main_step1(void){
+int main(void){
   OS_Init();
   Profile_Init();  // initialize the 7 hardware profiling pins
   OS_InitSemaphore(&sAB, 0);
@@ -692,6 +693,7 @@ void TaskO(void){ // dummy
   CountO = 0; // this should run a lot
   while(1){
     CountO++;
+    TExaS_Task6();
   }
 }
 void TaskP(void){ // dummy
