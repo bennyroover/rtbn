@@ -364,22 +364,29 @@ int32_t *edgeSemaphore;
 void OS_EdgeTrigger_Init(int32_t *semaPt, uint8_t priority){
 	edgeSemaphore = semaPt;
 //***IMPLEMENT THIS***
-// 1) activate clock for Port D
+  SYSCTL_RCGCGPIO_R |= 0x08;  // 1) activate clock for Port D
 // allow time for clock to stabilize
-// 2) no need to unlock PD6
-// 3) disable analog on PD6
-// 4) configure PD6 as GPIO
-// 5) make PD6 input
-// 6) disable alt funct on PD6
-// disable pull-up on PD6
-// 7) enable digital I/O on PD6  
-// (d) PD6 is edge-sensitive 
-//     PD6 is not both edges 
-//     PD6 is falling edge event 
-// (e) clear PD6 flag
-// (f) arm interrupt on PD6
+//GPIO_PORTF_LOCK_R = 0x4C4F434B; // 2) no need to unlock PD6
+  GPIO_PORTD_CR_R |= 0x40;         // allow changes to PD6
+  GPIO_PORTD_AMSEL_R &= ~0x40;     // 3) disable analog on PD6
+  GPIO_PORTD_DIR_R &= ~0x40;      // 5) make PD6 input
+  GPIO_PORTD_AFSEL_R &= ~0x40;    // 6) disable alt funct on PD6 (PD <- PD&(10111111)) 4) configure PD6 as GPIO
+  GPIO_PORTD_PUR_R &= ~0x40;      // disable pull-up on PD6
+  GPIO_PORTD_DEN_R |= 0x40;       // 7) enable digital I/O on PD6 
+  GPIO_PORTD_IS_R &= ~0x40;       // (d) PD6 is edge-sensitive 
+  GPIO_PORTD_IBE_R &= ~0x40;      //     PD6 is not both edges
+  GPIO_PORTD_IEV_R &= ~0x40;      //     PD6 is falling edge event    
+  GPIO_PORTD_ICR_R = 0x40;        // (e) clear PD6 flag
+  GPIO_PORTD_IM_R |= 0x40;        // arm interrupt on PD6
+  
+  // extra: disable open drain mode
+  GPIO_PORTD_ODR_R &= ~0x40;
+
+
 // priority on Port D edge trigger is NVIC_PRI0_R	31 – 29
 // enable is bit 3 in NVIC_EN0_R
+  NVIC_PRI0_R = (NVIC_PRI0_R&~0xE0000000)|(priority << 29); 
+  NVIC_EN0_R = 0x00000008;    
  }
 
 // ******** OS_EdgeTrigger_Restart ************
@@ -391,12 +398,19 @@ void OS_EdgeTrigger_Restart(void){
 //***IMPLEMENT THIS***
 // rearm interrupt 3 in NVIC
 // clear flag6
+  GPIO_PORTD_IM_R |= 0x40;
+  GPIO_PORTD_ICR_R = 0x40;  // acknowledge flag6
 }
 void GPIOPortD_Handler(void){
 //***IMPLEMENT THIS***
 	// step 1 acknowledge by clearing flag
   // step 2 signal semaphore (no need to run scheduler)
   // step 3 disarm interrupt to prevent bouncing to create multiple signals
+  if(GPIO_PORTD_RIS_R & 0x40){  // poll PD6
+    GPIO_PORTD_ICR_R = 0x40;  // acknowledge flag6
+    OS_Signal(edgeSemaphore); // signal edge occurred
+    GPIO_PORTD_IM_R &= ~0x40; // disarm interrupt on PD6
+  }
 }
 
 

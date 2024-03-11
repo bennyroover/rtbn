@@ -702,7 +702,7 @@ void TaskP(void){ // dummy
     CountP++;
   }
 }
-int main(void){
+int main_step2(void){
   OS_Init();
   Profile_Init();  // initialize the 7 hardware profiling pins
   OS_InitSemaphore(&sI, 0);
@@ -761,7 +761,7 @@ void TaskR(void){ // consumer
 		OS_EdgeTrigger_Restart();
   }
 }
-int main_step3(void){
+int main(void){
   OS_Init();
   Profile_Init();  // initialize the 7 hardware profiling pins
   OS_InitSemaphore(&sI, 0);
