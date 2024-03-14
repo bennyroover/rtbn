@@ -70,9 +70,21 @@ enum DRESULT eDisk_ReadSector(
 // starting ROM address of the sector is	EDISK_ADDR_MIN + 512*sector
 // return RES_PARERR if EDISK_ADDR_MIN + 512*sector > EDISK_ADDR_MAX
 // copy 512 bytes from ROM (disk) into RAM (buff)
-// **write this function**
- 
-			
+// **write this function**	
+      
+  // We do not need physical layer functions to read the flash
+  // because once erased and programmed, software simply reads
+  // from the memory address in the usual manner. 
+
+  if (EDISK_ADDR_MIN + 512*sector > EDISK_ADDR_MAX)
+    return RES_PARERR;
+  
+  uint8_t *addr = (uint8_t *)(EDISK_ADDR_MIN + 512*sector);
+  int i;
+  for (i = 0; i < 512; i++) {
+    buff[i] = addr[i];
+  }
+  
   return RES_OK;
 }
 
@@ -94,7 +106,10 @@ enum DRESULT eDisk_WriteSector(
 // write 512 bytes from RAM (buff) into ROM (disk)
 // you can use Flash_FastWrite or Flash_WriteArray
 // **write this function**
+  if (EDISK_ADDR_MIN + 512*sector > EDISK_ADDR_MAX)
+    return RES_PARERR;
   
+  Flash_WriteArray((uint32_t *)buff, (uint32_t)(EDISK_ADDR_MIN + 512*sector), 128); // write 128 32-bit words
 			
   return RES_OK;
 }
@@ -111,8 +126,9 @@ enum DRESULT eDisk_WriteSector(
 enum DRESULT eDisk_Format(void){
 // erase all flash from EDISK_ADDR_MIN to EDISK_ADDR_MAX
 // **write this function**
-  
-	
-	
+  uint32_t address;
+  for (address = EDISK_ADDR_MIN; address < EDISK_ADDR_MAX; address = address + 1024) {
+    if (Flash_Erase(address)) {return RES_ERROR;}
+  }
   return RES_OK;
 }
