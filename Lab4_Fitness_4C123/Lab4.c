@@ -459,7 +459,7 @@ void Task7(void){
 // Remember that you must have exactly one main() function, so
 // to work on this step, you must rename all other main()
 // functions in this file.
-int main_full(void){
+int main(void){
   OS_Init();
   Profile_Init();  // initialize the 7 hardware profiling pins
   BSP_Button1_Init();
@@ -485,8 +485,8 @@ int main_full(void){
 	OS_PeriodTrigger0_Init(&TakeSoundData,1);  // every 1 ms
 	OS_PeriodTrigger1_Init(&TakeAccelerationData,100); //every 100ms
   // when grading change 1000 to 4-digit number from edX
-  TExaS_Init(GRADER, 8864  );          // initialize the Lab 4 grader
-//  TExaS_Init(LOGICANALYZER, 1000); // initialize the Lab 4 logic analyzer
+//  TExaS_Init(GRADER, 8864  );          // initialize the Lab 4 grader
+  TExaS_Init(LOGICANALYZER, 1000); // initialize the Lab 4 logic analyzer
   OS_Launch(BSP_Clock_GetFreq()/THREADFREQ); // doesn't return, interrupts enabled in here
   return 0;             // this never executes
 }
@@ -761,7 +761,7 @@ void TaskR(void){ // consumer
 		OS_EdgeTrigger_Restart();
   }
 }
-int main(void){
+int main_step3(void){
   OS_Init();
   Profile_Init();  // initialize the 7 hardware profiling pins
   OS_InitSemaphore(&sI, 0);
