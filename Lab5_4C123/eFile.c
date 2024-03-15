@@ -64,7 +64,8 @@ uint8_t lastsector(uint8_t start){
 // (i.e. the FAT is corrupted).
 uint8_t findfreesector(void){
 // **write this function**
-  uint8_t fs = -1, i = 0, ls;
+  uint8_t i = 0, ls;
+  int fs = -1;
   
   while(1) {
     ls = lastsector(Directory[i]);
@@ -111,10 +112,13 @@ uint8_t OS_File_New(void){
 // **write this function**
   uint8_t i = 0;
   MountDirectory();
-  while (Directory[i] != 255) {
+  while (1) {
+    if (Directory[i] == 255)
+      return i;
     i++;
+    if (i == 255)
+      return i;
   } 
-  return 255;
 }
 
 //********OS_File_Size*************
