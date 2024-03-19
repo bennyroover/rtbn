@@ -22,6 +22,7 @@
  http://users.ece.utexas.edu/~valvano/
  */
 
+#include <stdint.h>
 
 #ifndef __OS_H
 #define __OS_H  1

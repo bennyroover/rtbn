@@ -3,6 +3,8 @@
 // Daniel and Jonathan Valvano
 // February 7, 2016
 
+#include <stdint.h>
+
 #define STCTRL          (*((volatile uint32_t *)0xE000E010))
 #define STRELOAD        (*((volatile uint32_t *)0xE000E014))
 #define STCURRENT       (*((volatile uint32_t *)0xE000E018))
@@ -52,3 +54,4 @@ void EndCritical(long sr);    // restore I bit to previous value
 // Outputs: none
 void WaitForInterrupt(void);  
 
+void Clock_Delay1ms(uint32_t);

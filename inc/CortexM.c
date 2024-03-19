@@ -76,6 +76,7 @@
 
 #else
   //Keil uVision Code
+  /*
   __asm void
   delay(unsigned long ulCount)
   {
@@ -83,6 +84,7 @@
     bne     delay
     bx      lr
   }
+  */
 
 #endif
   
@@ -91,8 +93,11 @@
 // Inputs: n, number of msec to wait
 // Outputs: none
 void Clock_Delay1ms(uint32_t n){
+  /*
   while(n){
     delay(23746);  // 1 msec, tuned at 80 MHz, originally part of LCD module
     n--;
   }
+  */
+  for(volatile int i=6600*n; i>0; i--);
 }
