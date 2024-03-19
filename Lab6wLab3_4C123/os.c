@@ -12,21 +12,22 @@
 // function definitions in osasm.s
 void StartOS(void);
 
+#define NULL 0
 #define NUMTHREADS  6        // maximum number of threads
 #define NUMPERIODIC 2        // maximum number of periodic threads
 #define STACKSIZE   100      // number of 32-bit words in stack per thread
 struct tcb{
   int32_t *sp;       // pointer to stack (valid for threads not running
   struct tcb *next;  // linked-list pointer
-   // nonzero if blocked on this semaphore
-   // nonzero if this thread is sleeping
+  int32_t *blocked; // nonzero if blocked on this semaphore
+  uint32_t sleep; // nonzero if this thread is sleeping
 //*FILL THIS IN****
 };
 typedef struct tcb tcbType;
 tcbType tcbs[NUMTHREADS];
 tcbType *RunPt;
 int32_t Stacks[NUMTHREADS][STACKSIZE];
-
+void static runperiodicevents(void);
 
 // ******** OS_Init ************
 // Initialize operating system, disable interrupts
@@ -38,10 +39,28 @@ void OS_Init(void){
   DisableInterrupts();
   BSP_Clock_InitFastest();// set processor clock to fastest speed
   // perform any initializations needed
+  BSP_PeriodicTask_Init(&runperiodicevents, 1000, 0);
 }
 
 void SetInitialStack(int i){
-
+  tcbs[i].sp = &Stacks[i][STACKSIZE - 16];
+  Stacks[i][STACKSIZE-1] = 0x01000000;  // R16 PSR, set thumb bit 
+  // R15 (PC) set in OS_AddThreads()
+  Stacks[i][STACKSIZE-3] = 0x14141414;  // R14 (LR)
+  // R13 Stack pointer is not stored on the stack, instead to TCB above
+  Stacks[i][STACKSIZE-4] = 0x12121212;  // R12
+  Stacks[i][STACKSIZE-5] = 0x03030303;  // R3
+  Stacks[i][STACKSIZE-6] = 0x02020202;  // R2
+  Stacks[i][STACKSIZE-7] = 0x01010101;  // R1
+  Stacks[i][STACKSIZE-8] = 0x00000000;  // R0
+  Stacks[i][STACKSIZE-9] = 0x11111111;  // R11
+  Stacks[i][STACKSIZE-10] = 0x10101010; // R10
+  Stacks[i][STACKSIZE-11] = 0x09090909; // R9
+  Stacks[i][STACKSIZE-12] = 0x08080808; // R8
+  Stacks[i][STACKSIZE-13] = 0x07070707; // R7
+  Stacks[i][STACKSIZE-14] = 0x06060606; // R6
+  Stacks[i][STACKSIZE-15] = 0x05050505; // R5
+  Stacks[i][STACKSIZE-16] = 0x04040404; // R4 
   // **Same as Lab 2****
 }
 
@@ -57,7 +76,29 @@ int OS_AddThreads(void(*thread0)(void),
                   void(*thread4)(void),
                   void(*thread5)(void)){
   // **similar to Lab 2. initialize as not blocked, not sleeping****
+  long status;
+  status = StartCritical(); 
+  tcbs[0].next = &tcbs[1]; // 0 points to 1 
+  tcbs[1].next = &tcbs[2]; // 1 points to 2 
+  tcbs[2].next = &tcbs[3]; // 2 points to 3
+  tcbs[3].next = &tcbs[4]; // 3 points to 4
+  tcbs[4].next = &tcbs[5]; // 4 points to 5
+  tcbs[5].next = &tcbs[0]; // 5 points to 0                   
 
+  SetInitialStack(0); Stacks[0][STACKSIZE-2] = (int32_t)(thread0); // PC
+  SetInitialStack(1); Stacks[1][STACKSIZE-2] = (int32_t)(thread1);
+  SetInitialStack(2); Stacks[2][STACKSIZE-2] = (int32_t)(thread2);
+  SetInitialStack(3); Stacks[3][STACKSIZE-2] = (int32_t)(thread3); 
+  SetInitialStack(4); Stacks[4][STACKSIZE-2] = (int32_t)(thread4); 
+  SetInitialStack(5); Stacks[5][STACKSIZE-2] = (int32_t)(thread5); 
+                    
+  for (int i = 0; i < NUMTHREADS; i++) {
+    tcbs[i].blocked = NULL;
+    tcbs[i].sleep = 0;
+  }
+  
+  RunPt = &tcbs[0];        // thread 0 will run first 
+  EndCritical(status); 
   return 1;               // successful
 }
 
@@ -72,16 +113,42 @@ int OS_AddThreads(void(*thread0)(void),
 // These threads cannot spin, block, loop, sleep, or kill
 // These threads can call OS_Signal
 // In Lab 3 this will be called exactly twice
+void(*periodic1)(void) = NULL;
+void(*periodic2)(void) = NULL;
+uint32_t mod1;
+uint32_t mod2;
 int OS_AddPeriodicEventThread(void(*thread)(void), uint32_t period){
 // ****IMPLEMENT THIS****
+  if (periodic1 == NULL) {
+    periodic1 = thread;
+    mod1 = period;
+  } else if (periodic2 == NULL) {
+    periodic2 = thread;
+    mod2 = period;    
+  } else {
+    return 0;
+  }
   return 1;
-
 }
 
+uint32_t count = 0;
 void static runperiodicevents(void){
 // ****IMPLEMENT THIS****
 // **RUN PERIODIC THREADS, DECREMENT SLEEP COUNTERS
-
+  if (count % mod1 == 0)
+    if (periodic1 != NULL)
+      periodic1();
+  
+  if (count % mod2 == 0)
+    if (periodic2 != NULL)
+      periodic2();
+  
+  count = (mod1>=mod2 ? (count+1)%mod1 : (count+1)%mod2);
+  
+  for (int i = 0; i < NUMTHREADS; i++) {
+    if (tcbs[i].sleep != 0)
+      (tcbs[i].sleep)--;
+  }
 }
 
 //******** OS_Launch ***************
@@ -100,6 +167,10 @@ void OS_Launch(uint32_t theTimeSlice){
 // runs every ms
 void Scheduler(void){ // every time slice
 // ROUND ROBIN, skip blocked and sleeping threads
+  RunPt = RunPt->next;
+  while (RunPt->blocked || RunPt->sleep) {
+    RunPt = RunPt->next;
+  }
 }
 
 //******** OS_Suspend ***************
@@ -121,6 +192,8 @@ void OS_Suspend(void){
 void OS_Sleep(uint32_t sleepTime){
 // set sleep parameter in TCB
 // suspend, stops running
+  RunPt->sleep = sleepTime;
+  OS_Suspend();
 }
 
 // ******** OS_InitSemaphore ************
@@ -130,6 +203,7 @@ void OS_Sleep(uint32_t sleepTime){
 // Outputs: none
 void OS_InitSemaphore(int32_t *semaPt, int32_t value){
 //***IMPLEMENT THIS***
+  *semaPt = value;
 }
 
 // ******** OS_Wait ************
@@ -140,6 +214,14 @@ void OS_InitSemaphore(int32_t *semaPt, int32_t value){
 // Outputs: none
 void OS_Wait(int32_t *semaPt){
 //***IMPLEMENT THIS***
+  DisableInterrupts();
+  (*semaPt)--;
+  if (*semaPt < 0) { // we are blocked
+    RunPt->blocked = semaPt;
+    EnableInterrupts();
+    OS_Suspend();
+  }
+  EnableInterrupts();
 }
 
 // ******** OS_Signal ************
@@ -150,6 +232,17 @@ void OS_Wait(int32_t *semaPt){
 // Outputs: none
 void OS_Signal(int32_t *semaPt){
 //***IMPLEMENT THIS***
+  tcbType *tpt;
+  DisableInterrupts();
+  (*semaPt)++;
+  if (*semaPt <= 0) { // someone got unblocked
+    tpt = RunPt->next; // we cannot be blocked
+    while (tpt->blocked != semaPt) {
+      tpt = tpt->next;
+    }  
+    tpt->blocked = NULL;
+  }
+  EnableInterrupts();
 }
 
 #define FSIZE 10    // can be any size
@@ -166,6 +259,10 @@ uint32_t LostData;  // number of lost pieces of data
 // Outputs: none
 void OS_FIFO_Init(void){
 //***IMPLEMENT THIS***
+  LostData = 0;
+  PutI = 0;
+  GetI = 0;
+  OS_InitSemaphore(&CurrentSize, 0);
 }
 
 // ******** OS_FIFO_Put ************
@@ -176,9 +273,15 @@ void OS_FIFO_Init(void){
 // Outputs: 0 if successful, -1 if the FIFO is full
 int OS_FIFO_Put(uint32_t data){
 //***IMPLEMENT THIS***
-
+  if (CurrentSize == FSIZE) { // FIFO full
+    LostData++;
+    return -1; // full
+  }
+  
+  Fifo[PutI] = data; // store data at Put index
+  PutI = (PutI + 1) % FSIZE; // increment and wrap Put index
+  OS_Signal(&CurrentSize);
   return 0;   // success
-
 }
 
 // ******** OS_FIFO_Get ************
@@ -189,7 +292,9 @@ int OS_FIFO_Put(uint32_t data){
 // Outputs: data retrieved
 uint32_t OS_FIFO_Get(void){uint32_t data;
 //***IMPLEMENT THIS***
-
+  OS_Wait(&CurrentSize); // block if empty
+  data = Fifo[GetI]; // get data from Get index
+  GetI = (GetI + 1) % FSIZE; // increment and wrap Get index
   return data;
 }
 
