@@ -299,7 +299,7 @@ void BuildAddNotifyCharDescriptorMsg(char name[], uint8_t *msg){
     len,0x00};      // Initial length of the user description string
 
   memcpy(msg, temp, 12);
-  memcpy(msg, name, len);
+  memcpy(msg+12, name, len);
   SetFCS(msg);
 }
   
@@ -352,7 +352,7 @@ void BuildSetDeviceNameMsg(char name[], uint8_t *msg){
   int len = 0;
   while(name[len])
     len++;
-  //no null byte (?)
+  len++; //no null byte (?)
   
   uint8_t temp[] = {   
     SOF,len+3,0x00,    // length = name length + 3
@@ -404,12 +404,13 @@ void BuildSetAdvertisementDataMsg(char name[], uint8_t *msg){
 //****You implement this function as part of Lab 6*****
   int len = 0;
   while (name[len]) len++;
+  len++; // no null teminator (?)
   
   uint8_t temp[] = {   
     SOF,len+12,0x00,    // length = len + 12
     0x55,0x43,      // SNP Set Advertisement Data
     0x00,           // Scan Response Data
-    len+1,0x09};        // length (match example), type=LOCAL_NAME_COMPLETE
+    len,0x09};        // length (match example) (used to be len+1), type=LOCAL_NAME_COMPLETE 
 
   uint8_t temp2[] = {
   // connection interval range
