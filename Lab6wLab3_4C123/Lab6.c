@@ -532,7 +532,7 @@ void Bluetooth_Init(void){volatile int r;
   Lab6_AddCharacteristic(0xFFF4,1,&TemperatureByteData,0x01,0x02,"Temperature",&Bluetooth_ReadTemperature,0);
   Lab6_AddCharacteristic(0xFFF5,4,&LightData,0x01,0x02,"Light",&Bluetooth_ReadLight,0);
   Lab6_AddCharacteristic(0xFFF6,2,&edXNum,0x02,0x08,"edXNum",0,&TExaS_Grade);
-  Lab6_AddNotifyCharacteristic(0xFFF7,2,&Steps,"Number of Steps",&Bluetooth_Steps);
+  //Lab6_AddNotifyCharacteristic(0xFFF7,2,&Steps,"Number of Steps",&Bluetooth_Steps);
   Lab6_RegisterService();
   Lab6_StartAdvertisement();
   Lab6_GetStatus();

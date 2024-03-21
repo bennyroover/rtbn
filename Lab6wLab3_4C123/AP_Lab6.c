@@ -11,6 +11,7 @@
 #include "../inc/UART1.h"
 #include "../inc/AP.h"
 #include "AP_Lab6.h"
+#include <string.h>
 //**debug macros**APDEBUG defined in AP.h********
 #ifdef APDEBUG
 #define OutString(STRING) UART0_OutString(STRING)
@@ -23,6 +24,9 @@
 #define OutUHex2(NUM)
 #define OutChar(N)
 #endif
+
+#define UUID0(X) 0xFF&X 
+#define UUID1(X) (0xFF00&X)>>8
 
 //****links into AP.c**************
 extern const uint32_t RECVSIZE;
@@ -60,9 +64,14 @@ extern NotifyCharacteristic_t NotifyCharacteristicList[];
 // Outputs: none
 void SetFCS(uint8_t *msg){
 //****You implement this function as part of Lab 6*****
-
-  
+  int i;
+  int len = msg[1];
+  uint8_t fcs = 0;
+  for (i = 1; i < len + 5; i++)
+    fcs ^= msg[i];
+  msg[i] = fcs;
 }
+  
 //*************BuildGetStatusMsg**************
 // Create a Get Status message, used in Lab 6
 // Inputs pointer to empty buffer of at least 6 bytes
@@ -71,8 +80,9 @@ void SetFCS(uint8_t *msg){
 void BuildGetStatusMsg(uint8_t *msg){
 // hint: see NPI_GetStatus in AP.c
 //****You implement this function as part of Lab 6*****
-
-  
+  uint8_t temp[] = {SOF,0x00,0x00,0x55,0x06};
+  memcpy(msg, temp, 5);
+  SetFCS(msg);
 }
 //*************Lab6_GetStatus**************
 // Get status of connection, used in Lab 6
@@ -97,8 +107,9 @@ uint32_t Lab6_GetStatus(void){volatile int r; uint8_t sendMsg[8];
 void BuildGetVersionMsg(uint8_t *msg){
 // hint: see NPI_GetVersion in AP.c
 //****You implement this function as part of Lab 6*****
-  
-  
+  uint8_t temp[] = {SOF,0x00,0x00,0x35,0x03};
+  memcpy(msg, temp, 5);
+  SetFCS(msg);    
 }
 //*************Lab6_GetVersion**************
 // Get version of the SNP application running on the CC2650, used in Lab 6
@@ -119,8 +130,14 @@ uint32_t Lab6_GetVersion(void){volatile int r;uint8_t sendMsg[8];
 // build the necessary NPI message that will add a service
 void BuildAddServiceMsg(uint16_t uuid, uint8_t *msg){
 //****You implement this function as part of Lab 6*****
-  
-  
+  int i;
+  uint8_t temp[] = {
+    SOF,3,0x00,     // length = 3
+    0x35,0x81,      // SNP Add Service
+    0x01,           // Primary Service
+    UUID0(uuid), UUID1(uuid)};
+  memcpy(msg, temp, 8);
+  SetFCS(msg);
 }
 //*************Lab6_AddService**************
 // Add a service, used in Lab 6
@@ -140,8 +157,11 @@ int Lab6_AddService(uint16_t uuid){ int r; uint8_t sendMsg[12];
 // build the necessary NPI message that will register a service
 void BuildRegisterServiceMsg(uint8_t *msg){
 //****You implement this function as part of Lab 6*****
-  
-  
+  uint8_t temp[] = {   
+    SOF,0x00,0x00,  // length = 0
+    0x35,0x84};     // SNP Register Service
+  memcpy(msg, temp, 5);
+  SetFCS(msg);
 }
 //*************Lab6_RegisterService**************
 // Register a service, used in Lab 6
@@ -170,9 +190,18 @@ void BuildAddCharValueMsg(uint16_t uuid,
 // for a hint see NPI_AddCharValue in AP.c
 // for a hint see first half of AP_AddCharacteristic and first half of AP_AddNotifyCharacteristic
 //****You implement this function as part of Lab 6*****
-  
-    
+  uint8_t temp[] = {   
+    SOF,0x08,0x00,    // length = 8
+    0x35,0x82,        // SNP Add Characteristic Value Declaration
+    permission,       // 0=none,1=read,2=write, 3=Read+write, GATT Permission
+    properties,0x00,  // 2=read,8=write,0x0A=read+write,0x10=notify, GATT Properties
+    0x00,             // RFU
+    0x00,0x02,        // Maximum length of the attribute value=512
+    UUID0(uuid), UUID1(uuid)};        // UUID
+  memcpy(msg, temp, 13);
+  SetFCS(msg);
 }
+
 
 //*************BuildAddCharDescriptorMsg**************
 // Create a Add Characteristic Descriptor Declaration message, used in Lab 6
@@ -186,8 +215,21 @@ void BuildAddCharDescriptorMsg(char name[], uint8_t *msg){
 // for a hint see NPI_AddCharDescriptor in AP.c
 // for a hint see second half of AP_AddCharacteristic
 //****You implement this function as part of Lab 6*****
+  int strlen = 0;
+  while(name[strlen])
+    strlen++;
+  strlen++; //null terminator
   
-  
+  uint8_t temp[11] = {   
+    SOF,strlen+6,0x00,  // length determined at run time 6+string length
+    0x35,0x83,      // SNP Add Characteristic Descriptor Declaration
+    0x80,           // User Description String
+    0x01,           // GATT Read Permissions
+    20,0x00,      // Maximum Possible length of the user description string
+    strlen,0x00};     // Initial length of the user description string
+  memcpy(msg, temp, 11);
+  memcpy(msg+11, name, strlen);
+  SetFCS(msg);
 }
 
 //*************Lab6_AddCharacteristic**************
@@ -243,8 +285,22 @@ void BuildAddNotifyCharDescriptorMsg(char name[], uint8_t *msg){
 // for a hint see NPI_AddCharDescriptor4 in VerySimpleApplicationProcessor.c
 // for a hint see second half of AP_AddNotifyCharacteristic
 //****You implement this function as part of Lab 6*****
-  
-  
+  int len = 0;
+  while(name[len]) len++;
+  len++; //null terminator
+ 
+  uint8_t temp[] = {   
+    SOF,len+7,0x00,    // length = 12
+    0x35,0x83,      // SNP Add Characteristic Descriptor Declaration
+    0x84,           // User Description String+CCCD
+    0x03,           // CCCD parameters read+write
+    0x01,           // GATT Read Permissions
+    0x20,0x00,      // Maximum Possible length of the user description string
+    len,0x00};      // Initial length of the user description string
+
+  memcpy(msg, temp, 12);
+  memcpy(msg, name, len);
+  SetFCS(msg);
 }
   
 //*************Lab6_AddNotifyCharacteristic**************
@@ -293,8 +349,19 @@ void BuildSetDeviceNameMsg(char name[], uint8_t *msg){
 // for a hint see NPI_GATTSetDeviceNameMsg in VerySimpleApplicationProcessor.c
 // for a hint see NPI_GATTSetDeviceName in AP.c
 //****You implement this function as part of Lab 6*****
+  int len = 0;
+  while(name[len])
+    len++;
+  //no null byte (?)
   
-  
+  uint8_t temp[] = {   
+    SOF,len+3,0x00,    // length = name length + 3
+    0x35,0x8C,      // SNP Set GATT Parameter (0x8C)
+    0x01,           // Generic Access Service
+    0x00,0x00};      // Device Name
+  memcpy(msg, temp, 8);
+  memcpy(msg+8, name, len);
+  SetFCS(msg);
 }
 //*************BuildSetAdvertisementData1Msg**************
 // Create a Set Advertisement Data message, used in Lab 6
@@ -311,8 +378,18 @@ void BuildSetAdvertisementData1Msg(uint8_t *msg){
 // TI_ST_KEY_DATA_ID
 // Key state=0
 //****You implement this function as part of Lab 6*****
-  
-  
+  uint8_t temp[] = {   
+    SOF,11,0x00,    // length = 11
+    0x55,0x43,      // SNP Set Advertisement Data
+    0x01,           // Not connected Advertisement Data
+    0x02,0x01,0x06, // GAP_ADTYPE_FLAGS,DISCOVERABLE | no BREDR
+    0x06,0xFF,      // length, manufacturer specific
+    0x0D ,0x00,     // Texas Instruments Company ID
+    0x03,           // TI_ST_DEVICE_ID
+    0x00,           // TI_ST_KEY_DATA_ID
+    0x00,           // Key state
+    0xEE};          // FCS (calculated by AP_SendMessageResponse)  
+  memcpy(msg, temp, 17);
 }
 
 //*************BuildSetAdvertisementDataMsg**************
@@ -325,8 +402,30 @@ void BuildSetAdvertisementDataMsg(char name[], uint8_t *msg){
 // for a hint see NPI_SetAdvertisementDataMsg in VerySimpleApplicationProcessor.c
 // for a hint see NPI_SetAdvertisementData in AP.c
 //****You implement this function as part of Lab 6*****
+  int len = 0;
+  while (name[len]) len++;
   
+  uint8_t temp[] = {   
+    SOF,len+12,0x00,    // length = len + 12
+    0x55,0x43,      // SNP Set Advertisement Data
+    0x00,           // Scan Response Data
+    len+1,0x09};        // length (match example), type=LOCAL_NAME_COMPLETE
+
+  uint8_t temp2[] = {
+  // connection interval range
+    0x05,           // length of this data
+    0x12,           // GAP_ADTYPE_SLAVE_CONN_INTERVAL_RANGE
+    0x50,0x00,      // DEFAULT_DESIRED_MIN_CONN_INTERVAL
+    0x20,0x03,      // DEFAULT_DESIRED_MAX_CONN_INTERVAL
+  // Tx power level
+    0x02,           // length of this data
+    0x0A,           // GAP_ADTYPE_POWER_LEVEL
+    0x00};           // 0dBm
   
+  memcpy(msg, temp, 8);
+  memcpy(msg+8, name, len);
+  memcpy(msg+8+len, temp2, 9);
+  SetFCS(msg);
 }
 //*************BuildStartAdvertisementMsg**************
 // Create a Start Advertisement Data message, used in Lab 6
@@ -338,8 +437,18 @@ void BuildStartAdvertisementMsg(uint16_t interval, uint8_t *msg){
 // for a hint see NPI_StartAdvertisementMsg in VerySimpleApplicationProcessor.c
 // for a hint see NPI_StartAdvertisement in AP.c
 //****You implement this function as part of Lab 6*****
-  
-  
+const uint8_t temp[] = {   
+  SOF,14,0x00,    // length = 14
+  0x55,0x42,      // SNP Start Advertisement
+  0x00,           // Connectable Undirected Advertisements
+  0x00,0x00,      // Advertise infinitely.
+  UUID0(interval),UUID1(interval),      // Advertising Interval (100 * 0.625 ms=62.5ms)
+  0x00,           // Filter Policy RFU
+  0x00,           // Initiator Address Type RFU
+  0x00,0x01,0x00,0x00,0x00,0xC5, // RFU
+  0x02};           // Advertising will restart with connectable advertising when a connection is terminated
+  memcpy(msg, temp, 19);
+  SetFCS(msg);
 }
 
 //*************Lab6_StartAdvertisement**************
